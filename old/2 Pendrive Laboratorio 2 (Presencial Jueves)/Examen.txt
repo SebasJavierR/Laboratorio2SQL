@@ -1,0 +1,149 @@
+--1
+create or replace package body PA_FINAL is
+
+    type tr_countries is record (
+        country_name countries.country_name%type,
+        country_id countries.country_id%type,
+        region_id countries.region_id%type,
+        departments number
+    );
+
+    type tt_countries is table of tr_countries index by binary_integer; 
+    t_countries tt_countries;
+
+    cursor c_countries is 
+    select co.country_id, lo.country_id , lo.location_id , de.location_id , de.department_id , count(department_id) cant
+    from countries co
+        inner join locations lo on (co.country_id = lo.country_id)
+        inner join departments de on (lo.location_id = de.location_id)
+    group by co.country_id, lo.country_id , lo.location_id , de.location_id , de.department_id;
+
+    v_x number := 1;
+
+    begin --one time only
+
+        for r_countries in c_countries loop
+            t_countries(v_x).country_name := r_.country_name;
+            t_countries(v_x).country_id := r_.country_id;
+            t_countries(v_x).region_id := r_.region_id;
+            t_countries(v_x).c_countries := r_.cant;
+            v_x := v_x + 1;
+        end loop;
+
+    end ;
+-- Fin 1
+
+-- 2
+    create or replace function fu_pais(pi_Nombre in countries.country_name%type)
+    return boolean;
+
+        i := tt_countries.first;
+        while i <= tt_countries.last loop
+                if tt_countries.country_name = pi_Nombre then
+                    return TRUE
+                end if;
+                    i := tt_countries.next(i);
+        end loop;
+    return false;
+
+    exception
+    when no_data_found then 
+        --dbms_output.put_line('pais no existe:');
+        return false;
+    when too_many_rows then
+        raise_application_error (-20001,'Existe más de un pais con el mismo nombre');
+    when others then
+        raise_application_error (-20002,'Error Inesperado '|| sqlerrm);
+    end fu_pais;
+-- Fin 2
+
+--3
+-- recive Id pais (alfabetico), nombre y region
+
+    create or replace procedure pr_alta_pais
+    (pi_country_id countries.country_id%type , pi_country_name countries.country_name%type, pi_region_id countries.region_id%type) 
+    is
+        nombre_exist exception; 
+        pragma exception_init(nombre_exist,-20004);
+        v_country_id customer.customer_id%type;
+
+    begin
+        v_country_id := fu_pais(pi_name);
+            --dbms_output.put_line(v_country_id);
+        if v_country_id is false then
+            insert into tr_countries(country_name , country_id , region_id)
+            values (pi_country_id, pi_country_name, pi_region_id);
+            dbms_output.put_line('se de de alta al pais');
+        else
+            raise_application_error(-20004, 'Ya hay un pais con el mismo nombre');
+        end if;
+
+        exception
+            --pais No existe salta usando los errores de la funcion anterior
+            --Si nombre duplicada salta usando los errores de la funcion anterior
+            when others then
+                raise_application_error (-20003,'Error Inesperado borrar '|| sqlerrm);
+
+    end pr_alta_pais;
+--Fin 3
+
+----4
+
+    declare
+
+    cursor c_locations(pi_country_id locations.country_id%type) is
+    select location_id , country_id , city
+    where country_id = pi_country_id
+    ;
+
+    --
+    create or replace procedure pr_listar_datos(pi_country_id countries.country_id%type) 
+
+        i := tt_countries.first;
+        while i <= tt_countries.last loop
+            if tt_countries.country_id(i) = pi_country_id  then
+                dbms_output.put_line('Pais:' || tt_countries.country_id);
+                dbms_output.put_line('Location ID City');
+                for r_locations in c_locations(pi_country_id) loop
+                    dbms_output.put_line(  c_locations.location_id || c_locations.city  );
+                end loop;
+                dbms_output.put_line('Total:' || tt_countries.departments);
+            end if;
+                i := tt_countries.next(i);
+        end loop;
+
+    exception
+    when no_data_found then 
+        raise_application_error (-20003,'Existe más de un pais con el mismo nombre');
+
+    when too_many_rows then
+        raise_application_error (-20001,'Existe más de un pais con el mismo nombre');
+    when others then
+        raise_application_error (-20002,'Error Inesperado '|| sqlerrm);
+    end listar_datos;
+
+    create or replace procedure pr_listar_datos()
+        i := tt_countries.first;
+        while i <= tt_countries.last loop
+            dbms_output.put_line('Pais:' || tt_countries.country_id);
+            dbms_output.put_line('Location ID City');
+            for r_locations in c_locations(pi_country_id) loop
+                dbms_output.put_line(  c_locations.location_id || c_locations.city  );
+            end loop;
+            dbms_output.put_line('Total:' || tt_countries.departments);
+            i := tt_countries.next(i);
+        end loop;
+
+    exception
+    when no_data_found then 
+        raise_application_error (-20003,'Existe más de un pais con el mismo nombre');
+
+    when too_many_rows then
+        raise_application_error (-20001,'Existe más de un pais con el mismo nombre');
+    when others then
+        raise_application_error (-20002,'Error Inesperado '|| sqlerrm);
+    end listar_datos;
+
+
+-- Fin 4
+end PA_FINAL;

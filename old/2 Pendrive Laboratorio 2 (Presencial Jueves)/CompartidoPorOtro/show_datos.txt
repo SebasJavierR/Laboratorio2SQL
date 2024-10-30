@@ -1,0 +1,80 @@
+create or replace package SHOW_DATOS as
+procedure Show_Emp ;
+procedure Show_Dep ;
+
+type tr_loc is record( loc Location.regional_group%type );
+type tt_loc is table of tr_loc index by binary_integer; 
+
+end;
+
+
+
+
+create or replace package body SHOW_DATOS is
+
+cursor c_location is select LOCATION_ID i, regional_group loc
+                     from location;
+
+cursor c_departments (pi_loc_id location.location_id%type ) is 
+                                                                    select name 
+                                                                    from department d
+                                                                    inner join location l on (d.LOCATION_ID = l.LOCATION_ID)
+                                                                    where l.location_id = pi_loc_id;
+
+
+cursor c_employees (pi_loc_id location.location_id%type ) is 
+                                                                    select e.first_name f, e.last_name l 
+                                                                    from employee e inner join department d on (d.department_id = e.department_id)
+                                                                    inner join location l on (d.LOCATION_ID = l.LOCATION_ID)
+                                                                    where l.location_id = pi_loc_id;
+
+t_loc tt_loc;
+
+
+procedure Show_Emp
+as
+l_idx binary_integer;
+begin
+
+    l_idx := t_loc.first;
+    
+    dbms_output.put_line('---------------------------------------------');
+    dbms_output.put_line('Region - Apellido y Nombre');
+    while l_idx <= t_loc.last loop
+            
+            for r_emp in c_employees(l_idx) loop
+                    dbms_output.put_line(t_loc(l_idx).loc || '           ' || r_emp.l || ', ' || r_emp.f);
+            end loop;
+            l_idx := t_loc.next(l_idx);
+    end loop;
+end;
+
+
+
+procedure Show_Dep
+as
+l_idx binary_integer;
+begin
+
+    l_idx := t_loc.first;
+
+    while l_idx <= t_loc.last loop
+            dbms_output.put_line('Nombre del departamento - Region');
+            for r_dep in c_departments(l_idx) loop
+                    dbms_output.put_line(t_loc(l_idx).loc || '           ' || r_dep.name);
+            end loop;
+            l_idx := t_loc.next(l_idx);
+    end loop;
+end;
+
+begin
+
+    for r_loc in c_location loop
+        t_loc(r_loc.i).loc := r_loc.loc;
+        dbms_output.put_line(t_loc(r_loc.i).loc);
+        
+    end loop;
+
+    
+
+end;

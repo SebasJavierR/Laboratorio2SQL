@@ -1,0 +1,144 @@
+create or replace package pa_localidades
+is
+
+    procedure ALTA_DEP(
+        pi_department_id departments.department_id%type,
+        pi_department_location departments.location_id%type,
+        pi_department_manager departments.manager_id%type,
+        pi_department_name departments.department_name%type
+        );
+ 
+
+    procedure LISTADO;
+
+end pa_localidades;
+
+CREATE OR REPLACE 
+PACKAGE BODY PA_FINAL_DEP is 
+
+    cursor c_deptments(pi_department_id departments.department_id%type)
+    is
+    select departments.department_id, departments.department_name, departments.manager_id, departments.location_id, count(employees.employee_id) as cant_emp
+    from departments inner join employees
+    where departments.department_id = employees.department_id;
+
+    type tr_loc is record(
+                            department_id departments.department_id% type,
+                            departments.department_name%type,
+                            location_id departments.location_id%type,
+                            manager_id departments.manager_id%type,
+                            cantidad_departments number,
+                            cant_emp number);
+    
+    type tt_loc is table of tr_loc index by binary_integer;
+    
+    t_loc tt_loc;
+    
+    --2
+    -- ingresa nombre y devuelve id o error
+    
+    create or replace function VALIDA_NOMBRE(pi_Nombre in departments.department_id%type)
+      return number is v_DeparmentId departments.department_id%type;
+    
+    begin
+      select department_id
+      into v_DepartmentId 
+      from departments 
+      where department_name = pi_Nombre;
+      return v_DepartmentId;
+    
+    exception
+      when no_data_found then 
+        dbms_output.put_line('department no existe:');
+        return null;
+        --raise_application_error (-20001,'department no existe');
+      when too_many_rows then
+        raise_application_error (-20002,'Existe más de un department con el mismo nombre');
+      when others then
+        raise_application_error (-20003,'Error Inesperado '|| sqlerrm);
+    end VALIDA_NOMBRE;
+    
+    --begin
+     --dbms_output.put_line(VALIDA_NOMBRE('Administration'));  --10
+    --end;
+    
+    --3
+    
+    -- ALTA_DEP 
+    -- Recibe pi_department_id departments.department_id%type, pi_department_location departments.location_id%type, pi_department_manager departments.manager_id%type, pi_deparment_name departments.department_name%type
+    --
+    create or replace procedure ALTA_DEP(
+        pi_department_id departments.department_id%type,
+        pi_department_location departments.location_id%type,
+        pi_department_manager departments.manager_id%type,
+        pi_department_name departments.department_name%type
+        ) is nombre_exist exception;
+        
+        pragma exception_init(nombre_exist, -20004);
+        v_deparment_id departments.department_id%type;
+    
+    begin
+        v_department_id := VALIDA_NOMBRE(pi_department_name);
+            dbms_output.put_line(v_department_id);
+        if v_department_id is null then
+            insert into departments(department_id, location_id, manager_id, deparment_name)
+            values (pi_department_id, pi_deparmtent_location, pi_department_manager, pi_department_name);
+            dbms_output.put_line('se de de alta al department');
+        else
+            raise_application_error(-20004, 'Ya hay un department con el mismo nombre');
+        end if;
+    
+        exception
+            --department No existe salta usando los errores de la funcion anterior
+            --Si nombre duplicada salta usando los errores de la funcion anterior
+            when others then
+                raise_application_error (-20003,'Error Inesperado borrar '|| sqlerrm);
+    
+    end ALTA_DEP;
+    
+    --begin
+    --ALTA_DEP(20,1800,201,'Marqueting');
+    --end;
+    
+    --4
+    -- LISTADO
+    -- Hay que sobre cargar
+    -- si hay id_region ==> su nombre y cantidad empleados y luego departamentos
+    -- si no hay id_region == > TODAS las regiones y sus empledos y departamentos
+    create or replace procedure LISTADO(
+        pi_department_location departments.location_id%type
+        ) as
+    
+    begin
+        if pi_department_location is not null then
+            select departments.department_id, departments.department_name, departments.manager_id, departments.location_id, count(employees.employee_id) as count_empleados
+            from departments inner join employees on (departments.department_id = employees.department_id) when (departments.location_id = pi_department_location )
+        else
+            raise_application_error(-20007, 'error localizacion');
+        end if;
+    
+        exception
+            when others then
+                raise_application_error (-20003,'Error Inesperado borrar '|| sqlerrm);
+    
+    end LISTADO;
+    --sobre cargo
+    create or replace procedure LISTADO() as
+    
+    begin
+        if pi_department_location is not null then
+            select departments.department_id, departments.department_name, departments.manager_id, departments.location_id, count(employees.employee_id) as count_empleados
+            from departments inner join employees on (departments.department_id = employees.department_id)
+        else
+            raise_application_error(-20007, 'error localizacion');
+        end if;
+    
+        exception
+            when others then
+                raise_application_error (-20003,'Error Inesperado borrar '|| sqlerrm);
+    
+    end LISTADO;    
+    
+
+
+END PA_FINAL_DEP;

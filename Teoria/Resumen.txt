@@ -1,0 +1,114 @@
+*************
+Base de datos
+*************
+
+Ventaja:
+Documentacion y mantenimiento / Sin esquema (Bueno para muchos datos) / Formato abiertos (usa XML y JSON) / Control vercion incorporado / facilidad de integrar datos nuevos / facil actualizacion datos / puede contener muchos datos / Edicion de datos semiestructurados (tengan o no estructura) / Mucha informacion guardable / buena busqueda e indexion.
+
+Escalables
+
+Desventajas: 
+Redundancia / Atomicidad debil (no soporte transacciones ACID) / Limitacion de verificacion de consistencia / Seguridad
+
+Uso:
+Contenido variado / Bigdata
+
+
+Motores
+Base X, DynamoDB, MongoDB
+
+
+
+******
+GRAFOS
+******
+
+Ventajas:
+Rendimiento (gran cantidad de datos) / prevencion de fraude (analisis de patrones) / flexibilidad (agregar nuevos datos y relaciones) / Escalabilidad (nuevos nodos) / Velocidad(depende del numero de relaciones concretas, no del conjunto de datos) / Presentacion
+
+Desventajas
+Inexistencia de lenguaje estandarizado / Escaza comunidad, poco soporte / ineficiencia para peticiones transaccionales / Escalabilidad (Limite a arq de un servidor, expandir es desafio) / Ineficiente con Altos volumenes de datos / busqueda lenta
+
+Uso:
+Redes sociales interactuacion de individuos / Ecommerce / Recomendaciones / Geolocalizacion / Control Acceso / Privacidad
+
+Motores
+Neo4j, AragonDB
+
+
+
+
+******
+Hibernate
+******
+
+Ventajas:
+Trabajar con entidades envez de querys / Orientado a objetos / Elimina errores en ejecucion / buen mantenimiento / genera el SQL en tiempo de iniciacion envez de ejecucion, Gran escalabilidad (uso en claouster, doble capa, )
+
+
+Desventajas:
+Las claves deben tener una clave primaria / Ineficiente en migrar datos / limitacion en consultas nativas / curva aprendisaje / muchos ficheros
+
+Uso:
+Aplicaciones java, mapeo tablas SQL
+Arquitectura doble capa
+
+******
+Clave valor
+******
+
+Ventajas:
+Esquemas flexibles / Sin esquemas preferidos / Escalabilidad horizontal (funciona en clusters) / replicabilidad y alta disponibilidad / Particionado / alta velocidad de consulta / Alta velocidad de procesado / Alto rendimineto y baja exigencia
+
+Desventajas:
+Sin claves foraneas / incompatible con consultas SQL
+
+
+Uso:
+Alta velocidad y gran volumen de datos , facil consulta y escalar
+
+Motores
+Amazon DynamoDB/ redis/ berkeley DB /rak
+
+******
+Clave valor
+******
+
+Ventajas:
+Velocidad / Omiten datos irrelebantes / leer inmediato / escalabilidad Big data multiples nodos procesamiento paralelo varios procesadores / buenos en compresion y guardado
+
+Desventajas:
+Esquematizado dificil / sin seguridad / ineficiente en procesamiento transaccional en linea / Ineficiente para carga incremental de datos / problemas al consultar una FILA
+
+Uso:
+Manejo de querys instantaneos / acceso sencillo a elementos relevantes / muchas transacciones rapidas / leer una categoria
+
+Netflix, apple, spotifay
+
+Motores
+MariaDB / apache cassandra / Redshift
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

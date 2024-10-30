@@ -1,0 +1,156 @@
+Examen lucas
+
+Pregunta 1
+Algunas alternativas para atenuar el desajuste por impedancia son:
+Respuesta:
+Persistence framework, Capa DAO, DBOO
+
+Pregunta 2
+Algunas ventajas de la implementación de ORM son:
+Respuesta:
+Abstracción de la base de datos
+
+Pregunta 3
+Indique de las siguientes, cual es una ventaja de los sistemas NoSQL
+Respuesta:
+Pueden manejar mucha cantidad de datos
+
+Pregunta 4
+Que significa NoSQL
+Respuesta:
+Not Only SQL
+
+Pregunta 5
+¿Cual de las siguientes afirmaciones sobre el teorema de CAP es correcta?
+Respuesta:
+Una de sus características es Disponibilidad
+
+Pregunta 6
+Cuando en Big Data se habla de las 3Vs se refiere a
+Respuesta:
+Volumen-Velocidad-Variedad
+
+Pregunta 7
+¿Qué Aspecto no es destacable de las BBDD de familia de columnas?
+Respuesta:
+Consistencia
+
+Pregunta 8
+En una base de datos Hbase (familia de columnas) como esta definida una celda
+Respuesta:
+Por una clave primaria de fila, una familia de columnas y una marca de tiempo
+
+Pregunta 9
+¿Cuál de las siguientes afirmaciones es correcta?
+Respuesta:
+Neo4j es una base de datos orientada a grafos
+
+Pregunta 10
+Las bases orientadas a grafos
+Respuesta:
+Suelen cumplir las garantías ACID
+
+Pregunta 11
+¿Cuál de las siguientes es una ventaja de las bases de datos clave-valor?
+Respuesta:
+
+
+Pregunta 12
+¿Los datos de un mismo elemento no tiene porque tener los mismos atributos ni el mismo numero de atributos?
+Respuesta:
+Los datos de un mismo elemento no tienen porque tener los mismos atributos ni el mismo numero de atributos
+
+Pregunta 13
+Que variable PL/SQL no deben ser definidas en la zona de declaración
+Respuesta
+Host
+
+Pregunta 14
+¿Que tipo de programas no pueden ser almacenada en la base?
+Respuesta:
+Bloques anónimos
+
+Pregunta 15
+Un Bloque PI/SQL tiene como obligatorio
+Respuesta:
+Begin, End
+
+Pregunta 16
+Para obtener la salida de un dato al ejecutar una unidad de programa PL/SQL podemos utilizar
+Respuesta:
+DBMS_OUTOPUT.PUT_LINE()
+
+Examen Parcial 2 mio
+
+Pregunta 1
+¿Qué configuración le parece óptima para una implementación de BD de familia de columnas?
+Respuesta:
+Un servidor estándar centralizado
+
+Pregunta 2
+Analizando el siguiente código para MongoDB podemos afirmar que:
+{ "nombre": "Juan Perez",
+"alumno": true,
+"carrera": "Licenciatura en Informatica",
+"foto":"d:\alumnos\fotos\insciptos-2014\perezJuan.jpg",
+"materias":
+[
+{ "materia": "Laboratorio 2",
+"nota": 15,
+"fecha": "2106-12-15"
+}
+]
+}
+Respuesta:
+Es incorrecto por que la nota es mayor a 10
+Es incorrecto porque no soporta fechas
+Todas son incorrectas (RESPUESTA)
+Es incorrecto por que la colección solo tiene un objeto
+
+Pregunta 3
+Seleccione la desventaja que NO corresponde en DBs documentales
+Respuesta:
+Dificultad al actualizar masivamente la información(RESPUESTA)
+Los datos suelen ser redundantes
+Deficiencias con datos gráficos, multimedia o geográficos
+Limitación en el tamaño de los documentos
+
+Pregunta 7
+¿Cuales son los usos más frecuentes de las DBs clave-valor?
+Respuesta:
+Almacenar datos simples, como id de sesiones(RESPUESTA)
+Almacenar datos de empleados de una empresa
+Analizar el seguimiento de venta de productos
+Almacenamiento de movimientos bancarios
+
+Pregunta 8
+Algunas alternativas para atenuar el desajuste por impedancia son:
+Respuesta:
+Todas son correctas(RESPUESTA)
+Persistence Framework
+DBOO
+Capa DAO
+
+Pregunta 9
+Si almaceno un objeto en una base de datos relacional:
+Respuesta:
+Se puede almacenar en una o varias tablas
+Se debe almacenar en varias tablas
+Se debe almacenar en una tabla(RESPUESTA)
+Almaceno los atributos y los métodos en store procedures (ant)
+
+Pregunta 10
+¿Qué se entiende por tolerancia a fallos?
+Respuesta:
+Un sistema que no admite errores.
+Un sistema que es capaz de seguir funcionando aunque unos de sus nodos quede inaccesible. (RESPUESTA)
+Todas son correctas
+Un sistema que funciona en un solo nodo.
+
+Pregunta 11
+Cuando en Big Data se habla de las 3V's, se refiera a:
+Respuesta:
+Volumen - Velocidad - Variedad(RESPUESTA)
+Vertical - Veracidad - Velocidad
+Volumen - Velocidad - Veracidad
+Volumen - Veracidad - Viabilidad

@@ -1,0 +1,225 @@
+1)  Realice una consulta SQL que 
+muestre el id de departamento, su nombre, nombre de la localidad, cantidad de empleados y el promedio de salario+comisión,
+--department.department_id, department.name , department.location_id, count(employee.employee_id), prom(salario) + comision
+--department.department_id, department.name , location.regional_group, count(employee.employee_id),
+para aquellos departamentos que tengan menos de 6 empleados.
+Ordenados por nombre de departamento.
+--location.regional_group
+
+
+
+--SOLUCION MIA
+select department.department_id, department.name , location.regional_group, count(employee.employee_id), avg(employee.salary + employee.commission) 
+	from department 
+        inner join employee on (department.department_id = employee.department_id)
+        inner join location on (department.location_id = location.location_id)
+	group by department.department_id, department.name, location.regional_group
+	having count(employee.employee_id) < 6
+	order by department.name
+
+
+
+--SOLUCION IA -- Distinto resulto -- mal --
+SELECT 
+    d.department_id,
+    d.name AS department_name,
+    d.location_id,
+    COUNT(e.employee_id) AS num_employees,
+    AVG(e.salary + COALESCE(e.commission, 0)) AS average_salary_with_commission
+FROM 
+    department d
+LEFT JOIN 
+    employee e ON d.department_id = e.department_id
+GROUP BY 
+    d.department_id, d.name, d.location_id
+HAVING 
+    COUNT(e.employee_id) < 6
+ORDER BY 
+    d.name;
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+2)  Función que valida el cliente, la cual recibe el nombre de un cliente y retorna el id correspondiente o cancela con excepciones propias indicando el error en el mensaje del error.
+Contemplar todo error posible..
+--valida cliente
+--Recibe customer.name
+--devuelve customer.customer_id
+
+
+create or replace function fu_cliente_id(pi_Nombre in CUSTOMER.NAME%type)
+  return number is v_ClienteId CUSTOMER.CUSTOMER_ID%type;
+
+begin
+  select CUSTOMER_ID 
+  into v_ClienteId 
+  from CUSTOMER 
+  where NAME = pi_Nombre;
+  return v_ClienteId;
+
+exception
+  when no_data_found then 
+    dbms_output.put_line('cliente no existe:');
+    return null;
+    --raise_application_error (-20001,'cliente no existe');
+  when too_many_rows then
+    raise_application_error (-20002,'Existe más de un cliente con el mismo nombre');
+  when others then
+    raise_application_error (-20003,'Error Inesperado '|| sqlerrm);
+end fu_cliente_id;
+
+begin
+ dbms_output.put_line(fu_cliente_id('dasd')); 
+end;
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+3)  Procedimiento que permita dar de alta un cliente.
+
+Recibirá por parámetro el id del cliente, el nombre del cliente, dirección, ciudad, código postal y el id del vendedor
+--customer.customer_id , customer.name, customer.address, customer.city, customer.zip_code, customer.salesperson_id
+--customer.customer_id%type , customer.name%type, customer.address%type, customer.city%type, customer.zip_core%type, customer.salesperson_id%type
+·    Informar si se actualizo correctamente
+·    Si ya existe un cliente con ese nombre no darlo de alta e informarlo
+·    Utilizar la función del punto anterior
+·    Si no se pudo realizar informar el motivo correcto. No Cancelar
+
+
+
+create or replace procedure pr_alta_cliente
+ (pi_customer_id customer.customer_id%type , pi_name customer.name%type, pi_address customer.address%type, pi_city customer.city%type, pi_zip_code customer.zip_code%type, pi_salesperson_id customer.salesperson_id%type) 
+is
+    nombre_exist exception; 
+    pragma exception_init(nombre_exist,-20004);
+    v_customer_id customer.customer_id%type;
+
+begin
+    v_customer_id := fu_cliente_id(pi_name);
+        dbms_output.put_line(v_customer_id);
+    if v_customer_id is null then
+        insert into customer(customer_id , name, address, city, zip_code, salesperson_id)
+        values (pi_customer_id, pi_name, pi_address,  pi_city, pi_zip_code, pi_salesperson_id);
+        dbms_output.put_line('se de de alta al cliente');
+    else
+        raise_application_error(-20004, 'Ya hay un cliente con el mismo nombre');
+    end if;
+
+    exception
+        --Producto No existe salta usando los errores de la funcion anterior
+        --Si nombre duplicada salta usando los errores de la funcion anterior
+        when others then
+            raise_application_error (-20003,'Error Inesperado borrar '|| sqlerrm);
+
+end pr_alta_cliente;
+
+begin
+pr_alta_cliente(2 , 'mario', '345 VIEWRIDGE', 'BELMONT', 96711, 7844);
+end;
+
+
+
+
+
+----------------------------------------
+4)  Realizar un bloque anónimo que muestre todas las escalas salariales y los empleados que pertenecen 
+·    En caso que el no haya empleados mostrar el mensaje correspondiente
+·    Ordenar por grado de la escala. Los empleados por apellido.
+·    Mostrar de la siguiente manera:
+
+Grado 1 de $999 a $999
+   nombre emp  Apellido Emp  Salario emp  Nombre jefe  apellido Jefe
+   --employee.first_name, employee.last_name, employee.salary, employee.MANAGER_ID--, employee.MANAGER_ID
+ aaaaa     bbbbbb      9999      AAAAAA     BBBBB  
+ aaaaa     bbbbbb      9999      AAAAAA     BBBBB  
+ aaaaa     bbbbbb      9999      AAAAAA     BBBBB   
+  Cantidad de empleados: 9 
+  -contador
+
+Grado 2 de $999 a $999
+   nombre emp  Apellido Emp  Salario emp  Nombre jefe  apellido Jefe
+ aaaaa     bbbbbb      9999      AAAAAA     BBBBB  
+ aaaaa     bbbbbb      9999      AAAAAA     BBBBB  
+ aaaaa     bbbbbb      9999      AAAAAA     BBBBB   
+   Cantidad de empleados: 9
+
+Aclaraciones:
+·       Manejar todos los errores adecuadamente.
+·       Evitar accesos innecesarios a la base
+
+
+declare
+
+    --Declaro variable
+    v_grade_id SALARY_GRADE.GRADE_ID%type; 
+    contador number := 0;
+
+    --Declaro cursor 
+    cursor c_empleado (pi_grade_id SALARY_GRADE.GRADE_ID%type) is
+    select e1.first_name, e1.last_name, e1.salary, e1.MANAGER_ID, salary_grade.grade_id, e2.first_name as nombre_jefe, e2.last_name as apellido_jefe
+    from employee e1
+        inner join salary_grade on (e1.salary between salary_grade.lower_bound and salary_grade.upper_bound)
+        inner join employee e2 on (e1.MANAGER_ID = e2.employee_id)
+    where salary_grade.grade_id = pi_grade_id
+    order by e1.last_name
+    ;
+
+    --Declaro cursor
+    cursor c_salary_grade(pi_grade_id2 SALARY_GRADE.GRADE_ID%type) is
+    select GRADE_ID, LOWER_BOUND, UPPER_BOUND from SALARY_GRADE
+    where GRADE_ID = pi_grade_id2
+    ;
+
+begin
+    for v_grade_id in 1..5 loop --Por algun motivo no me funciona bien el ciclo for r_salary_grade in c_salary_grade(v_grade_id) loop, por lo que lo force con este otro ciclo.
+
+    for r_salary_grade in c_salary_grade(v_grade_id) loop
+        contador := 0;
+        --Grado 2 de $999 a $999
+        dbms_output.put_line( ' Grado: ' || r_salary_grade.GRADE_ID || ' de $' ||r_salary_grade.LOWER_BOUND || ' A $' ||r_salary_grade.UPPER_BOUND );
+
+        --v_department_id := r_salary_grade.department_id;
+        dbms_output.put_line(  ' --------------- ' );
+        --nombre emp  Apellido Emp  Salario emp  Nombre jefe  apellido Jefe
+        dbms_output.put_line(  ' nombre emp ' || ' ' || ' Apellido Emp ' || ' ' || ' Salario emp ' || ' ' || ' Nombre jefe '|| ' ' || ' apellido Jefe ');
+
+        for r_empleado in c_empleado (r_salary_grade.GRADE_ID) loop
+            dbms_output.put_line( '   ' || r_empleado.first_name || '   ' || r_empleado.last_name || '   ' || r_empleado.salary || '  ' || r_empleado.nombre_jefe || '  ' || r_empleado.apellido_jefe);
+            contador := contador + 1 ;
+        end loop;
+
+        if contador = 0 then
+            dbms_output.put_line('No hay empleados');
+        else
+        dbms_output.put_line( 'Cantidad de empleados: ' || contador );
+        end if;
+
+        dbms_output.put_line(  ' ********** ' );
+
+    --v_grade_id := v_grade_id + 1;
+    end loop;
+
+    end loop;
+    exception
+        when no_data_found then 
+            raise_application_error (-20001,'Empleado y/o grados');
+        when others then
+            raise_application_error (-20003,'Error Inesperado  '|| sqlerrm);
+end;
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+/*one time only*/
+begin
+  dbms_output.put_line('Primera');
+
+  for r_emp in c_job loop
+    t_job(v_x).id := r_emp.id;
+    t_job(v_x).function := r_emp.function;
+    t_job(v_x).c_job := r_emp.cant;
+    v_x := v_x + 1;
+  end loop;
+
+end ;

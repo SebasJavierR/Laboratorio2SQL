@@ -1,0 +1,278 @@
+1)    Realice una consulta SQL que muestre el id de producto, descripción precio lista vigente, precio min vigente y cantidad de ordenes en las que fue vendido, para aquellos productos que estén incluidos en menos de 10 órdenes.
+Ordenados por nombre de producto.
+
+2)   Función que valida el cliente, la cual recibe el nombre de un cliente y retorna el id correspondiente o cancela con excepciones propias indicando el error en el mensaje del error.
+Contemplar todo error posible..
+(BIEN)
+
+3)   Procedimiento que permita dar de alta un cliente.
+Recibirá por parámetro el id del cliente, el nombre del cliente y el id del vendedor
+·        Informar si se actualizo correctamente
+·        Si ya existe un cliente con ese nombre no darlo de alta e informalo
+·        Utilizar la función del punto anterior
+·        Si no se pudo realizar informar el motivo correcto. No Cancelar
+
+4)     Escribir un bloque anónimo que permita ingresar como variable de sustitución un código de producto y liste para este todo su historial de precios. Listar ordenados por fecha de vigencia
+·   SI el producto no existe informarlo
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+
+1.- NO COMPILA
+ CANTIDAD DE ORDENES < 10
+ ORDER_ID NO VA EN EL SELECT
+ EL ORDER VA AL FINAL DE TODO FALTA FILTRAR POR END_DATE PARA LA FECHA VIGENTE 
+
+2.- ok 
+
+3.- NO COMPILA - ERROR EN DECLARACION DE TIPOS 
+
+4.- NO ES LO PEDIDO, SE PEDIA HACER UN BLOQUE ANONIMO PL/SQL
+-- NO USA VARIABLE DE SUSTITUCION PARA EL INGRESO DE DATOS
+-- DE TODAS FORMAS FALTA ORDER BY POR END_DATE QUE es LA ultima fecha
+-- NO MUESTRA HISTORIAL DEL PRECIO DEL PRODUCTO
+--FALTA CAPTURAR NO_DATA_FOUND
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-- 1 
+
+select i.PRODUCT_ID, pri.LIST_PRICE, pri.MIN_PRICE, pro.DESCRIPTION,i.ORDER_ID, count(i.ORDER_ID) Cantidad_ordenes
+
+from ITEM i
+  inner join PRICE pri
+    on pri.PRODUCT_ID = i.PRODUCT_ID 
+  inner join PRODUCT pro
+    on pro.PRODUCT_ID = i.PRODUCT_ID 
+  order by pro.DESCRIPTION
+  group by i.PRODUCT_ID, pri.LIST_PRICE, pri.MIN_PRICE, pro.DESCRIPTION,i.ORDER_ID
+
+  having count(i.ORDER_ID) > 10
+  
+ -- Remake (FUNCIONA)
+ 
+select p.product_id, p.description, pi.list_price, pi.min_price, count(s.product_id) Cantidad
+	from product p inner join price pi on (p.product_id = pi.product_id)
+               inner join item s on (s.product_id = pi.product_id)
+	where pi.end_date is null
+	group by p.product_id, p.description, pi.list_price, pi.min_price
+	having count(s.product_id) < 10
+	order by description
+  
+  
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--2 (BIEN)
+
+create or replace function fu_ClienteID(pi_Nombre in CUSTOMER.NAME%type)
+  return number is v_ClienteId CUSTOMER.CUSTOMER_ID%type;
+
+begin
+  select CUSTOMER_ID 
+  into v_ClienteId 
+  from CUSTOMER 
+  where NAME = pi_Nombre;
+  return v_ClienteId;
+
+exception
+  when no_data_found then 
+    raise_application_error (-20001,'cliente no existe');
+  when too_many_rows then
+    raise_application_error (-20002,'Existe más de un cliente con el mismo nombre');
+  when others then
+    raise_application_error (-20003,'Error Inesperado '|| sqlerrm);
+end fu_ClienteID;
+
+begin
+ dbms_output.put_line(fu_ClienteID('JOCKSPORTS')); 
+end;
+
+-- REMAKE (FUNCIONA) *************************************************************************************************************************************
+
+create or replace function validate_customer1
+     (pi_cust_name in customer.name%type)
+     return customer.name%type
+is
+     v_cust_id customer.customer_id%type;
+begin
+
+    select customer_id
+    into v_cust_id
+    from customer
+    where lower(name) = lower(pi_cust_name);
+
+    return v_cust_id;
+
+    exception
+        when too_many_rows then raise_application_error(-20001, 'Hay mas de un cliente para ese ese nombre');
+        when no_data_found then raise_application_error(-20002, 'No existe el cliente con el nombre indicado');
+        when others then raise_application_error(-20003, 'Paso algo');
+end;
+
+begin
+    dbms_output.put_line(validate_customer1('VOLLYRITE'));
+end;
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--3
+
+create or replace procedure pr_alta_cli
+  (pi_nombre IN CUSTOMER.name%type, pi_idC in CUSTOMER.CUSTOMER_ID%type, pi_idV in CUSTOMER.SALESPERSON_ID%type )
+is
+
+begin
+    if (pi_idC) = fu_ClienteID(pi_nombre) then
+      dbms_output.put_line('El nombre no coincide con la id del cliente');
+    else
+      insert
+      into CUSTOMER
+        (CUSTOMER_ID , name , SALESPERSON_ID)
+      values
+        (pi_idC , pi_nombre, pi_idV);
+        dbms_output.put_line('Se insertó correctamente');
+    end if;
+
+  exception
+    when others then
+      dbms_output.put_line('Error Inesperado: '|| sqlerrm);
+end;
+
+--REMAKE (FUNCIONA) *************************************************************************************************************************************
+
+create or replace function validate_customer2
+    (pi_cust_name in customer.name%type)
+    return customer.name%type
+is
+    v_cust_id customer.customer_id%type;
+begin
+
+    select customer_id
+    into v_cust_id
+    from customer
+    where lower(name) = lower(pi_cust_name);
+
+    return v_cust_id;
+
+    exception
+        when too_many_rows then return 0;
+        when no_data_found then return null;
+end;
+
+
+
+create or replace procedure create_customer
+    (pi_id_cust customer.customer_id%type, pi_name customer.name%type, pi_sp_id employee.employee_id%type)
+is
+    name_already_exists exception;
+    pragma exception_init(name_already_exists, -20001);
+
+    no_pk_ex exception;
+    pragma exception_init(no_pk_ex, -02291);
+
+    e_unique_pk exception;
+    pragma exception_init(e_unique_pk, -00001);
+
+    v_valid_name customer.customer_id%type;
+begin
+
+    v_valid_name := validate_customer2(pi_name);
+
+    if v_valid_name is not null or v_valid_name = 0 then
+        raise_application_error(-20001, 'Error');
+    end if;
+
+    insert into customer(customer_id, name, salesperson_id)
+    values (pi_id_cust, pi_name, pi_sp_id);
+
+    if(sql%rowcount = 1) then
+        dbms_output.put_line('Se creo el cliente correctamente');
+    end if;
+
+    exception
+        when name_already_exists then dbms_output.put_line('Ya existe un cliente para el nombre indicado');
+          when no_pk_ex then dbms_output.put_line('No existe el vendedor indicado');
+          when e_unique_pk then dbms_output.put_line('Ya existe un cliente con el id indicado');
+          when others then dbms_output.put_line('Ocurrio un error inesperado');
+end;
+
+begin
+
+create_customer(45, 'aaa', 7505);
+end;
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--4
+
+create or replace procedure precio_historico_productos
+is
+  cursor c_precio (p_id number)
+  is
+    select list_price, start_date, end_date
+    from price
+    where product_id = p_id;
+  v_num1 number(10) :=100890;
+  
+begin
+  for r_precio in c_precio (v_num1) loop
+    dbms_output.put_line('Precio: ' || r_precio.list_price || ' ' || r_precio.start_date || ' ' || r_precio.end_date);
+  end loop;
+
+  exception
+	when others then
+		dbms_output.put_line('Error inesperado:' || sqlerrm);
+end;
+
+begin
+  precio_historico_productos();
+end;
+
+-- REMAKE (FUNCIONA) *************************************************************************************************************************************
+
+declare
+
+    v_prod_id product.product_id%type;
+
+    cursor c_prod (pi_prod_id product.product_id%type)
+    is
+    select *
+    from price
+    where product_id = v_prod_id
+    order by end_date asc;
+
+    v_x varchar(1);
+begin
+
+    v_prod_id := :Producto;
+
+    select '*'
+    into v_x
+    from product
+    where product_id = v_prod_id;
+
+    dbms_output.put_line('El producto: ' || v_prod_id || ' tuvo este historial: ');
+    for r_prod in c_prod(v_prod_id) loop
+        dbms_output.put_line('Precio de lista: ' || r_prod.list_price || ', Precio minimo: ' || r_prod.min_price || ', Vigencia ' || r_prod.
+start_date || ' - ' || nvl(to_char(r_prod.end_date), 'Sin tiene fecha de fin'));
+    end loop;
+
+    exception
+        when no_data_found then dbms_output.put_line('No existe el producto indicado');
+        when others then dbms_output.put_line('Error inesperado');
+end;
+
+
+
+
+
+
+
+
+
+
+
+
+
+

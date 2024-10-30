@@ -1,0 +1,284 @@
+--BLOQUE
+--bloque anónimo ingresen por variable de sustitución un id de departamento y un nombre y de de alta un departamento.
+
+declare
+
+ v_id department.department_id%type;
+
+ v_nom department.name%type;
+
+begin
+
+ v_id := id;
+
+ v_nom := nom;
+
+
+
+ insert into department (department_id, name) values (v_id,v_nom);
+
+ 
+
+ dmbs_output.put_line(v_id || ' ' || v_nom)
+
+end;
+
+--------------------------------------------------------------------------------------------------------------------
+--IF
+--bloque anónimo reciba variable de sustitución una fecha de nacimiento en el formato dd/mm/yyyy
+--calcular la edad y mostrar por pantalla el nivel de escolaridad 
+/*
+0-2 bebe
+3-5 jardín
+6-12 primaria
+13-17 secundaria
+18-25 universidad
+>25  trabajo
+*/
+
+declare
+
+  v_Nacimiento varchar(11);
+
+  v_Edad number(2);
+
+begin
+
+
+
+  v_Nacimiento := :FECHA;
+
+  select round((sysdate - to_date(v_Nacimiento, 'dd/mm/yyyy'))/365,0)
+
+  into v_edad from dual;
+
+
+
+  if v_edad < 3 then
+
+    dbms_output.put_line('Bebe');
+
+  elsif v_edad < 6 then
+
+    dbms_output.put_line('Jardin');
+
+  elsif v_edad < 13 then
+
+    dbms_output.put_line('Primaria');
+
+  elsif v_edad < 18 then
+
+    dbms_output.put_line('Secundaria');
+
+  elsif v_edad < 25 then
+
+    dbms_output.put_line('Universidad');
+
+  else
+
+    dbms_output.put_line('Trabajo');
+
+  end if;
+
+
+
+end;
+
+
+
+--------------------------------------------------------------------------------------------------
+--CURSOR
+  -- Procedimiento
+  -- Recive Vendedor (%Cod de vendedor) 
+  -- Muestra clientes(%nombre , limite de crédito, leyenda(crédito))
+/*
+Leyenda crédito
+<= 4000 "BAJO"
+4001 y 8500 "MEDIO"
+>8501 "ALTO"
+*/
+
+create or replace procedure lista_empleados
+
+  (pi_vendedor customer.salesperson_id%type )
+
+is
+
+  cursor c_cust is
+
+    select customer_id || ' ' || name cli , credit_limit cre
+
+    from customer
+
+    where salesperson_id = pi_vendedor;
+
+
+
+  v_xflag varchar2(1);  
+
+  v_i number := 0;
+
+
+
+  begin 
+
+    select distinct '*' into v_xflag from customer 
+
+    where salesperson_id = pi_vendedor;     
+
+
+
+    for r_cust in c_cust loop
+
+      dbms_output.put_line(r_cust.cli);
+
+      dbms_output.put_line(r_cust.cre);
+
+      if r_cust.cre < 4001 then
+
+        dbms_output.put_line('BAJO');
+
+      elsif r_cust.cre < 8501 then
+
+        dbms_output.put_line('MEDIO');
+
+      else 
+
+        dbms_output.put_line('ALTO');
+
+      end if;
+
+       
+
+      v_i := v_i +1;
+
+    end loop;
+
+
+
+    if v_i = 0 then
+
+     dbms_output.put_line('El Vendedor no tiene Clientes');
+
+    end if;
+
+
+
+  exception
+
+  when NO_DATA_FOUND then
+
+    dbms_output.put_line('EL ID DE VENDEDOR NO EXISTE');
+
+  when OTHERS then
+
+    dbms_output.put_line('SE PRODUJO OTRO ERROR'||sqlerrm);
+
+  end;
+
+
+
+ ---
+
+
+
+declare 
+
+  v_vendedor customer.salesperson_id%TYPE;
+
+begin
+
+  v_vendedor:=:INGRESE_UN_SALESPERSON;
+
+  lista_empleados(v_vendedor);
+
+end;
+
+-------------------------------------------------------------------------------------
+--PROCEDIMIENTO
+--procedimiento para dar de alta un departamento
+--Recibe el nombre y el id de localidad.
+--Devuelve id de nuevo departamento creado.
+
+--Para generar el nuevo id, se le suma 1 al maximo existente en la tabla
+--Contemplar todos los errores posibles y Nunca cancelar
+
+
+
+create or replace procedure pr_AltaDepartamento
+
+(pi_Nombre IN department.name%type, IdLocalidad IN department.location_id%type default 299)
+
+is l_IdMaxima department.department_id%type;
+
+
+
+e_x exception;
+
+pragma exception_init(e_x,-2291);
+
+
+
+begin
+
+select nvl(max(department_id),0)
+
+into l_IdMaxima
+
+from department;
+
+
+
+insert into department (department_id , name , location_id)
+
+values (l_IdMaxima +1 , pi_Nombre , IdLocalidad);
+
+
+
+dbms_output.put_line('Agregado Correctamente');
+
+
+
+exception
+
+when e_x then
+
+dbms_output.put_line('Localidad no valida');
+
+when others then
+
+dbms_output.put_line('Error: '|| sqlerrm);
+
+
+
+end;
+-------------------------------------------------------------------------------------------------
+--FUNCION
+--función recibe salario
+--devuelve el valor del id de la escala de salarios
+
+--bloque anónimo
+--liste todos los empleados que pertenecen a esa escala de salarios.
+
+create or replace function fu_EmpleadoId(pi_salario in employee.SALARY%type)
+    return number is v_emp_id employee.employee_id%type;
+
+begin
+    select employee_id 
+    into v_emp_id 
+    from employee 
+    where SALARY = pi_salario;
+    return v_emp_id;
+
+exception
+    when no_data_found then 
+        raise_application_error (-20001,'Empleado no existe');
+    when too_many_rows then
+        raise_application_error (-20002,'Existe más de un Empleado con el mismo salario');
+    when others then
+        raise_application_error (-20003,'Error Inesperado '|| sqlerrm);
+end fu_EmpleadoId;
+
+begin
+  dbms_output.put_line(fu_EmpleadoId('2200')); --respuesta de 2200 es 7507
+end;

@@ -1,0 +1,367 @@
+--**********************************************************************************************************************************************************--
+--Tipo 1 buscar algo en especifico
+
+select department.department_id, department.name , location.regional_group, count(employee.employee_id), avg(employee.salary + employee.commission) 
+	from department 
+        inner join employee on (department.department_id = employee.department_id)
+        inner join location on (department.location_id = location.location_id)
+	group by department.department_id, department.name, location.regional_group
+	having count(employee.employee_id) < 6
+	order by department.name
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+--**********************************************************************************************************************************************************--
+--Tipo 2 Tabla
+
+--1)     Una tabla en memoria T_job con todos los campos de la tabla job y cantidad de empleados que cumplen esa tarea. 
+--Cargar la tabla en un bloque one_time_only. 
+
+
+
+create or replace package body "PA_countries" is
+
+--e_emp_noex exception;
+--e_emp_dupl exception;
+--e_emp_otro exception;
+--pragma exception_init(e_emp_noex,-20001);
+--pragma exception_init(e_emp_dupl,-20002);
+--pragma exception_init(e_emp_otro,-20003);
+
+type tr_countries is record (
+        id_region  co.country_id country_id ,countries.region_id%type,
+        country_id countries.country_id%type,
+        country_name countries.country_name%type,
+        c_countries number
+);
+
+type tt_countries is table of tr_countries index by binary_integer; 
+t_countries tt_countries;
+
+cursor c_countries is 
+select co.region_id id_region, co.country_id , co.country_name, count(r.region_id) cant
+from countries co inner join regions r on (co.region_id = r.region_id)
+group by co.region_id, co.country_id , co.country_name;
+
+v_x number := 1;
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+procedure pr_lista_job
+as
+    cursor c_job (pi_jjob_id job.job_id%type) is
+    select first_name f, last_name l, salary s
+    from employee
+    where job_id = pi_jjob_id;
+begin
+    for i in 1..t_job.count loop
+        dbms_output.put_line('Job: '|| t_job(i).id ||' - '|| t_job(i).function );
+        for r_job in c_job(t_job(i).id) loop
+            dbms_output.put_line('Nombre: ' || r_emp.f || ' Apellido: '|| r_emp.l ' Salario: '|| r_emp.s);
+        end loop;
+        dbms_output.put_line('Cantidad de empleados: ' ||t_job(i).c_job );
+    end loop;
+end;
+
+/*
+Job: 999 - XXXXXXXX
+Nombre          Apellido   Salario
+ AAAAA           Aaaaa       11111
+ BBBBB          Bbbbb      22222
+Cantidad de empleados: 99 
+*/
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+1)     Una tabla en memoria T_job con todos los campos de la tabla job y cantidad de empleados que cumplen esa tarea. 
+Cargar la tabla en un bloque one_time_only. 
+--1
+create or replace package body "PA_Job" is
+
+e_emp_noex exception;
+e_emp_dupl exception;
+e_emp_otro exception;
+pragma exception_init(e_emp_noex,-20001);
+pragma exception_init(e_emp_dupl,-20002);
+pragma exception_init(e_emp_otro,-20003);
+
+type tr_job is record (
+        id job.job_id%type,
+        function job.function%type,
+        c_job number
+);
+
+type tt_job is table of tr_job index by binary_integer; 
+t_job tt_job;
+
+cursor c_job is 
+select j.job_id id, j.function, count(e.employee_id) cant
+from job j inner join employee e on (j.job_id = e.job_id)
+group by j.job_id, j.function;
+
+v_x number := 1;
+
+--**********************************************************************************************************************************************************--
+--Tipo 3 Funcion privada
+
+
+--      Una funcion privada que recibe un nombre de pais y devuelve su ID. debe validar si ese pais ya existe en la tabla o no.
+--      Debe usar si o si la tabla de memoria para verificar la existencia del pais.
+--      Devuelve el id_region  co.country_id country_id ,del pais correspondiente. En caso de no poder hallar el dato cancelar con una exepcion propia
+
+--#no usa la tabla a memoria
+create or replace function fu_pais_id(pi_Nombre in countries.country_name%type)
+  return number is v_country_id countries.country_id%type;
+
+begin
+  select CUSTOMER_ID 
+  into v_country_id 
+  from countries 
+  where country_name = pi_Nombre;
+  return v_country_id;
+
+exception
+  when no_data_found then 
+    dbms_output.put_line('pais no existe:');
+    return null;
+    --raise_application_error (-20001,'cliente no existe');
+  when too_many_rows then
+    raise_application_error (-20002,'Existe más de un pais con el mismo nombre');
+  when others then
+    raise_application_error (-20003,'Error Inesperado '|| sqlerrm);
+end fu_pais_id;
+
+begin
+ dbms_output.put_line(fu_pais_id('dasd')); 
+end;
+
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+--Función privada que valide la existencia de un job, la cual recibe el nombre de la tarea y devuelve el id correspondiente o cancela.
+function fu_job_id(pi_function job.function%type)
+                 return  employee.employee_id%type is
+  l_job_id job.job_id%type;
+begin
+
+  select job_id
+    into l_job_id
+    from job
+   where upper(function) = upper(pi_function);
+
+   return l_job_id;
+
+  exception
+    when no_data_found then
+      raise_application_error(-20001,'Trabajo no existe');
+    when too_many_rows then  
+      raise_application_error(-20002,'mas de un trabajo con el mismo nombre');
+    when others then
+      raise_application_error(-20003,'error inesperado '||sqlerrm);
+        
+  end;                 
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+PROCEDURE pr_modif_tarea (pi_emp_id employee.employee_id%type,
+                            pi_job_id job.job_id%type) 
+as
+begin
+   update employee                      
+   set job_id = pi_job_id            
+   where employee_id = pi_emp_id;
+ 
+   if sql%rowcount = 1 then  
+      dbms_output.put_line('El trabajo se modifico exitosamente');
+   else
+      dbms_output.put_line('El trabajo no existe');
+   end if;
+
+end PR_MODIF_TAREA;
+---------------------------------------------------------------------------------------------------------
+
+PROCEDURE pr_modif_tarea (pi_emp_id employee.employee_id%type,
+                            pi_function job.function%type)  is
+  l_job_id job.job_id%type;
+
+begin
+   l_job_id := fu_job_id (pi_function);
+   pr_modif_tarea(pi_emp_id,l_job_id);
+exception
+  when e_emp_noex then
+    dbms_output.put_line('trabajo no existe');
+  when e_emp_dupl then
+    dbms_output.put_line('mas de un trabajo con el mismo nombre');
+  when e_emp_otro then
+    dbms_output.put_line('error inesperado el buscar el trabajo '||sqlerrm);
+
+ end;
+
+--**********************************************************************************************************************************************************--
+--Tipo 4 Un procedimiento que permita dar de alta un pais
+
+
+
+--      Un procedimiento que permita dar de alta un pais. el procedimiento recibe como parametros un id_region  co.country_id country_id ,de pais (Alfabetico), un nombre y una localidad.
+--      Verificar que no exista un pais con ese nombre en la tabla utilizando el pto. 2.
+--      Si no se pudo realizar el alta informar el motivo correcto (si el id_region  co.country_id country_id ,ya existe. si la localidad no existe y todo otro error posible).
+--      Se evaluara en este punto el correcto manejo de excepciones.
+
+
+
+create or replace procedure pr_alta_cliente
+ (pi_customer_id customer.customer_id%type , pi_name customer.name%type, pi_address customer.address%type, pi_city customer.city%type, pi_zip_code customer.zip_code%type, pi_salesperson_id customer.salesperson_id%type) 
+is
+    nombre_exist exception; 
+    pragma exception_init(nombre_exist,-20004);
+    v_customer_id customer.customer_id%type;
+
+begin
+    v_customer_id := fu_cliente_id(pi_name);
+        dbms_output.put_line(v_customer_id);
+    if v_customer_id is null then
+        insert into customer(customer_id , name, address, city, zip_code, salesperson_id)
+        values (pi_customer_id, pi_name, pi_address,  pi_city, pi_zip_code, pi_salesperson_id);
+        dbms_output.put_line('se de de alta al cliente');
+    else
+        raise_application_error(-20004, 'Ya hay un cliente con el mismo nombre');
+    end if;
+
+    exception
+        --Producto No existe salta usando los errores de la funcion anterior
+        --Si nombre duplicada salta usando los errores de la funcion anterior
+        when others then
+            raise_application_error (-20003,'Error Inesperado borrar '|| sqlerrm);
+
+end pr_alta_cliente;
+
+begin
+pr_alta_cliente(2 , 'mario', '345 VIEWRIDGE', 'BELMONT', 96711, 7844);
+end;
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+--Tipo 4 Un procedimiento que permita dar de alta un pais
+
+
+--3)  Procedimiento que permita dar de alta un cliente.
+
+--Recibirá por parámetro el id del cliente, el nombre del cliente, dirección, ciudad, código postal y el id del vendedor
+--customer.customer_id , customer.name, customer.address, customer.city, customer.zip_code, customer.salesperson_id
+--customer.customer_id%type , customer.name%type, customer.address%type, customer.city%type, customer.zip_core%type, customer.salesperson_id%type
+--·    Informar si se actualizo correctamente
+--·    Si ya existe un cliente con ese nombre no darlo de alta e informarlo
+--·    Utilizar la función del punto anterior
+--·    Si no se pudo realizar informar el motivo correcto. No Cancelar
+
+create or replace procedure pr_alta_cliente
+ (pi_customer_id customer.customer_id%type , pi_name customer.name%type, pi_address customer.address%type, pi_city customer.city%type, pi_zip_code customer.zip_code%type, pi_salesperson_id customer.salesperson_id%type) 
+is
+    nombre_exist exception; 
+    pragma exception_init(nombre_exist,-20004);
+    v_customer_id customer.customer_id%type;
+
+begin
+    v_customer_id := fu_cliente_id(pi_name);
+        dbms_output.put_line(v_customer_id);
+    if v_customer_id is null then
+        insert into customer(customer_id , name, address, city, zip_code, salesperson_id)
+        values (pi_customer_id, pi_name, pi_address,  pi_city, pi_zip_code, pi_salesperson_id);
+        dbms_output.put_line('se de de alta al cliente');
+    else
+        raise_application_error(-20004, 'Ya hay un cliente con el mismo nombre');
+    end if;
+
+    exception
+        --Producto No existe salta usando los errores de la funcion anterior
+        --Si nombre duplicada salta usando los errores de la funcion anterior
+        when others then
+            raise_application_error (-20003,'Error Inesperado borrar '|| sqlerrm);
+
+end pr_alta_cliente;
+
+begin
+pr_alta_cliente(2 , 'mario', '345 VIEWRIDGE', 'BELMONT', 96711, 7844);
+end;
+
+
+
+
+
+--**********************************************************************************************************************************************************--
+--/*one time only????*/
+
+begin
+  dbms_output.put_line('Primera');
+
+  for r_emp in c_job loop
+    t_job(v_x).id := r_emp.id;
+    t_job(v_x).function := r_emp.function;
+    t_job(v_x).c_job := r_emp.cant;
+    v_x := v_x + 1;
+  end loop;
+
+end ;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#Crear un paquete que:
+    --a)
+        Una tabla privada en memoria T_countries con todos los campos de la tabla countries y la cantidad de departamentos que hay en cada pais.
+        Cargar la tabla en un bloque one_time_only
+    --b)
+        Una funcion privada que recibe un nombre de pais y devuelve su ID. debe validar si ese pais ya existe en la tabla o no.
+        Debe usar si o si la tabla de memoria para verificar la existencia del pais.
+        Devuelve el id_region  co.country_id country_id ,del pais correspondiente. En caso de no poder hallar el dato cancelar con una exepcion propia
+    --c)
+        Un procedimiento que permita dar de alta un pais. el procedimiento recibe como parametros un id_region  co.country_id country_id ,de pais (Alfabetico), un nombre y una localidad.
+        Verificar que no exista un pais con ese nombre en la tabla utilizando el pto. 2.
+        Si no se pudo realizar el alta informar el motivo correcto (si el id_region  co.country_id country_id ,ya existe. si la localidad no existe y todo otro error posible).
+        Se evaluara en este punto el correcto manejo de excepciones.
+    --d)
+        Un procedimiento que liste los datos de los paises de la tabla de memoria. y la informacion de sus localidades.
+        Puede recibir parametros o no. Si recibe un id_region  co.country_id country_id ,de pais listar solo ese pais y si no recive parametros listar los paises.
+        Listar con el formato:
+        Pais:
+        Location id_region
+ co.country_id country_id ,        9999 AAAAAA
+        8888 BBBBBB
+        Total Departamentos 99
+
+--  1
+--      Una tabla privada en memoria T_countries con todos los campos de la tabla countries y la cantidad de departamentos que hay en cada pais.
+--      Cargar la tabla en un bloque one_time_only
